@@ -2,25 +2,25 @@
 FROM gradle:8.7-jdk17 AS builder
 WORKDIR /workspace
 
-# Copie seulement les fichiers de build Gradle pour profiter du cache
-COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+# Copier fichiers de configuration Gradle
+COPY build.gradle.kts settings.gradle.kts ./
 COPY gradle ./gradle
 
-# Télécharge les dépendances
+# Télécharge les dépendances (cache Docker)
 RUN gradle dependencies --no-daemon || true
 
-# Copie le reste du projet
+# Copier le code source
 COPY src ./src
 
-# Build le jar
+# Build le jar Spring Boot
 RUN gradle bootJar --no-daemon
 
 # -------- Run Stage --------
 FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
+
 COPY --from=builder /workspace/build/libs/*.jar app.jar
 
-# Préparer le script MySQL wait
 COPY wait-for-mysql.sh wait-for-mysql.sh
 RUN apk add --no-cache netcat-openbsd dos2unix \
     && dos2unix wait-for-mysql.sh \
