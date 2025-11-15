@@ -2,29 +2,29 @@
 FROM gradle:8.7-jdk17 AS builder
 WORKDIR /workspace
 
-# Copie tout le projet
-COPY . .
+# Copie seulement les fichiers de build Gradle pour profiter du cache
+COPY build.gradle.kts settings.gradle.kts gradle.properties ./
+COPY gradle ./gradle
 
-# Construit le JAR Spring Boot
+# Télécharge les dépendances
+RUN gradle dependencies --no-daemon || true
+
+# Copie le reste du projet
+COPY src ./src
+
+# Build le jar
 RUN gradle bootJar --no-daemon
 
 # -------- Run Stage --------
 FROM eclipse-temurin:21-jdk-alpine
-VOLUME /tmp
-
-# Installer outils nécessaires
-RUN apk add --no-cache netcat-openbsd dos2unix
 WORKDIR /app
-
-# Copier le JAR depuis l'étape de build
 COPY --from=builder /workspace/build/libs/*.jar app.jar
 
-# Copier et préparer le script wait-for-mysql.sh
+# Préparer le script MySQL wait
 COPY wait-for-mysql.sh wait-for-mysql.sh
-RUN dos2unix wait-for-mysql.sh
-RUN chmod +x wait-for-mysql.sh
+RUN apk add --no-cache netcat-openbsd dos2unix \
+    && dos2unix wait-for-mysql.sh \
+    && chmod +x wait-for-mysql.sh
 
 EXPOSE 8084
-
-# Entrée : attendre MySQL puis lancer l'app
 ENTRYPOINT ["./wait-for-mysql.sh"]
