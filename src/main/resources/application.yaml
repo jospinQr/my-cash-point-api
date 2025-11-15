@@ -1,0 +1,24 @@
+server:
+  port: ${PORT:8084}
+  address: 0.0.0.0
+  servlet:
+    context-path: /api/v1
+spring:
+  application:
+    name: my_cash_point
+
+  datasource:
+    url: jdbc:mysql://mysql-db-mycashpoint:3306/cashpoint_db
+    #   url: jdbc:mysql://localhost:3306/rdc_db
+    username: jospin
+    password: joe@8452
+    #    username: root
+    #    password:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+

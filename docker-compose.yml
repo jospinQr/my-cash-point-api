@@ -1,0 +1,58 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db-mycashpoint
+    restart: always
+    environment:
+      MYSQL_DATABASE: cashpoint_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: jospin
+      MYSQL_PASSWORD: joe@8452
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - mycashpoint-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-proot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin-cashpoint
+    restart: always
+    environment:
+      PMA_HOST: mysql
+    ports:
+      - "8085:80"
+    depends_on:
+      - mysql
+    networks:
+      - mycashpoint-network
+
+  springboot-app:
+    build: .
+    image: cashpoint:v1
+    container_name: cashpoint_api
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/cashpoint_db
+      SPRING_DATASOURCE_USERNAME: jospin
+      SPRING_DATASOURCE_PASSWORD: joe@8452
+    ports:
+      - "8084:8084"
+    networks:
+      - mycashpoint-network
+
+volumes:
+  mysql_data:
+
+networks:
+  mycashpoint-network:
